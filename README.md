@@ -6,9 +6,10 @@ I mostly wanted to use it as refresher for basic game-development concepts, in g
 
 ## Tentative TODOs:
 - [x] add a initial screen (e.g., with "Press any arrow key to start")
-- [ ] death/game-over animation with final score
+- [x] death/game-over ~~animation~~/message with final score
 - [ ] menu to configure variables: speed, grid size, etc.
 - [ ] add obstacles (e.g. randomly generated), and re-optimize food generation
 - [ ] maybe: add different snake and food models, and make them selectable
 - [ ] maybe: optimize generation and positioning of food
+- [ ] maybe: write a proper death animation
 

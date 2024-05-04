@@ -244,6 +244,28 @@ def show_starting_instructions():
     screen.blit(text_surface, text_rect)
 
 
+def show_game_over():
+    font = pygame.font.Font(pygame.font.get_default_font(), 36)
+    lines = [
+        'GAME OVER...',
+        f'FINAL SCORE: {scoreboard.get_score()}',
+    ]
+    for i, line in enumerate(lines):
+        text_surface = font.render(
+            line,
+            True,
+            (160, 0, 0),
+            (0, 0, 0)
+        )
+        text_rect = text_surface.get_rect(
+            center=(
+                DISPLAY_PARAMS.width // 2,
+                DISPLAY_PARAMS.height // 2 + grid.cell_size * 3 * (i - 1)
+            )
+        )
+        screen.blit(text_surface, text_rect)
+
+
 def game_loop(game_state):
     new_direction = None
     for event in pygame.event.get():
@@ -262,7 +284,6 @@ def game_loop(game_state):
         snake.draw()
         scoreboard.draw()
         show_starting_instructions()
-        pygame.display.update()
         if new_direction is not None:
             game_state = GameState.RUNNING
     elif game_state == GameState.RUNNING:
@@ -274,14 +295,14 @@ def game_loop(game_state):
         if is_collided:
             print(f'DEAD! Final score: {scoreboard.get_score()}')
             game_state = GameState.FINISHED
-            pygame.quit()
-            exit()
         screen.fill(DISPLAY_PARAMS.bg_color)
         grid.draw()
         snake.draw()
         scoreboard.draw()
         grid.maybe_spawn_food(snake.positions)
-        pygame.display.update()
+    if game_state == GameState.FINISHED:
+        show_game_over()
+    pygame.display.update()
     clock.tick(DISPLAY_PARAMS.max_fps)
     return game_state
 
