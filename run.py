@@ -219,7 +219,7 @@ def get_new_movement_direction(pressed_keys):
         return None
 
 
-def game_loop(movement_direction):
+def game_loop():
     for event in pygame.event.get():
         if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_q]):
@@ -246,7 +246,6 @@ def game_loop(movement_direction):
     grid.maybe_spawn_food(snake.positions)
     pygame.display.update()
     clock.tick(DISPLAY_PARAMS.max_fps)
-    return movement_direction
 
 
 pygame.init()
@@ -258,6 +257,5 @@ grid = Grid()
 snake = Snake((grid.shape[0] // 2, grid.shape[1] // 2), grid=grid)
 scoreboard = Scoreboard((grid.offset[0], grid.offset[1] - 30))
 
-movement_direction = (0, 1)
 while True:
-    movement_direction = game_loop(movement_direction)
+    game_loop()
