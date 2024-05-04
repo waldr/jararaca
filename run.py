@@ -78,14 +78,17 @@ class Snake:
         self.movement_direction = (0, 1)
 
     def init_surfaces(self):
+        head = pygame.image.load('graphics/head.png').convert_alpha()
+        body_V = pygame.image.load('graphics/body_V.png').convert_alpha()
+        body_SW = pygame.image.load('graphics/body_SW.png').convert_alpha()
         surfaces = dict(
-            head=pygame.image.load('graphics/head.png'),
-            body_NE=pygame.image.load('graphics/body_NE.png'),
-            body_SE=pygame.image.load('graphics/body_SE.png'),
-            body_SW=pygame.image.load('graphics/body_SW.png'),
-            body_NW=pygame.image.load('graphics/body_NW.png'),
-            body_H=pygame.image.load('graphics/body_H.png'),
-            body_V=pygame.image.load('graphics/body_V.png'),
+            head=head,
+            body_V=body_V,
+            body_H=pygame.transform.rotate(body_V, 90),
+            body_SW=body_SW,
+            body_SE=pygame.transform.rotate(body_SW, 90),
+            body_NE=pygame.transform.rotate(body_SW, 180),
+            body_NW=pygame.transform.rotate(body_SW, 270),
         )
         surfaces = dict(
             (k, pygame.transform.scale(surface, (self.grid.cell_size, self.grid.cell_size)))
