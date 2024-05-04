@@ -5,7 +5,7 @@ I mostly wanted to use it as refresher for basic game-development concepts, in g
 
 
 ## Tentative TODOs:
-- [ ] add a initial screen (e.g., with "Press any arrow key to start")
+- [x] add a initial screen (e.g., with "Press any arrow key to start")
 - [ ] death/game-over animation with final score
 - [ ] menu to configure variables: speed, grid size, etc.
 - [ ] add obstacles (e.g. randomly generated), and re-optimize food generation

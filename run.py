@@ -1,5 +1,7 @@
-import pygame
+from enum import Enum
 import random
+
+import pygame
 
 
 # pygame orders coodinates as (x, y), (width, height)
@@ -9,6 +11,12 @@ class DISPLAY_PARAMS:
     height = 720
     max_fps = 15
     bg_color = (127, 127, 127)
+
+
+class GameState(Enum):
+    STARTING = 1
+    RUNNING = 2
+    FINISHED = 3
 
 
 class Grid:
@@ -202,7 +210,7 @@ class Scoreboard:
         self.score += 1
 
     def draw(self):
-        text_surface = self.font.render(f'SCORE: {self.score}', False, (160, 0, 0))
+        text_surface = self.font.render(f'SCORE: {self.score}', True, (160, 0, 0))
         screen.blit(text_surface, self.position)
 
 
@@ -219,43 +227,73 @@ def get_new_movement_direction(pressed_keys):
         return None
 
 
-def game_loop():
+def show_starting_instructions():
+    font = pygame.font.Font(pygame.font.get_default_font(), 36)
+    text_surface = font.render(
+        'Press any arrow key to start',
+        True,
+        (160, 0, 0),
+        (0, 0, 0)
+    )
+    text_rect = text_surface.get_rect(
+        center=(
+            DISPLAY_PARAMS.width // 2,
+            DISPLAY_PARAMS.height // 2 - grid.cell_size * 3
+        )
+    )
+    screen.blit(text_surface, text_rect)
+
+
+def game_loop(game_state):
+    new_direction = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT or (
                 event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_q]):
             pygame.quit()
             exit()
-        new_direction = None
         if event.type == pygame.KEYDOWN:
             new_direction = get_new_movement_direction(pygame.key.get_pressed())
         if new_direction is not None:
             snake.movement_direction = new_direction
-    grew = snake.maybe_grow()
-    if grew:
-        scoreboard.increment_score()
-    snake.update_position()
-    is_collided = snake.is_collided()
-    if is_collided:
-        print(f'DEAD! Final score: {scoreboard.get_score()}')
-        pygame.quit()
-        exit()
-    screen.fill(DISPLAY_PARAMS.bg_color)
-    grid.draw()
-    snake.draw()
-    scoreboard.draw()
-    grid.maybe_spawn_food(snake.positions)
-    pygame.display.update()
+
+    if game_state == GameState.STARTING:
+        screen.fill(DISPLAY_PARAMS.bg_color)
+        grid.draw()
+        snake.draw()
+        scoreboard.draw()
+        show_starting_instructions()
+        pygame.display.update()
+        if new_direction is not None:
+            game_state = GameState.RUNNING
+    elif game_state == GameState.RUNNING:
+        grew = snake.maybe_grow()
+        if grew:
+            scoreboard.increment_score()
+        snake.update_position()
+        is_collided = snake.is_collided()
+        if is_collided:
+            print(f'DEAD! Final score: {scoreboard.get_score()}')
+            game_state = GameState.FINISHED
+            pygame.quit()
+            exit()
+        screen.fill(DISPLAY_PARAMS.bg_color)
+        grid.draw()
+        snake.draw()
+        scoreboard.draw()
+        grid.maybe_spawn_food(snake.positions)
+        pygame.display.update()
     clock.tick(DISPLAY_PARAMS.max_fps)
+    return game_state
 
 
 pygame.init()
-screen = pygame.display.set_mode(
-    (DISPLAY_PARAMS.width, DISPLAY_PARAMS.height))
+screen = pygame.display.set_mode((DISPLAY_PARAMS.width, DISPLAY_PARAMS.height))
 pygame.display.set_caption('Jararaca')
 clock = pygame.time.Clock()
 grid = Grid()
 snake = Snake((grid.shape[0] // 2, grid.shape[1] // 2), grid=grid)
 scoreboard = Scoreboard((grid.offset[0], grid.offset[1] - 30))
 
+game_state = GameState.STARTING
 while True:
-    game_loop()
+    game_state = game_loop(game_state)
