@@ -10,7 +10,7 @@ class DISPLAY_PARAMS:
     width = 1280
     height = 720
     max_fps = 15
-    bg_color = (127, 127, 127)
+    bg_color = (0, 0, 0)
 
 
 class GameState(Enum):
@@ -37,7 +37,6 @@ class Grid:
 
     def __init__(self):
         self.food_positions = []
-        pass
 
     def draw(self):
         for x in range(Grid.shape[0]):
@@ -302,6 +301,7 @@ def game_loop(game_state):
         grid.maybe_spawn_food(snake.positions)
     if game_state == GameState.FINISHED:
         show_game_over()
+    pygame.display.set_caption(f'Jararaca (FPS: {clock.get_fps():.2f})')
     pygame.display.update()
     clock.tick(DISPLAY_PARAMS.max_fps)
     return game_state
