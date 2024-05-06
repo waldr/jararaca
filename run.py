@@ -16,7 +16,8 @@ class DISPLAY_PARAMS:
 class GameState(Enum):
     STARTING = 1
     RUNNING = 2
-    FINISHED = 3
+    GAME_OVER = 3
+    EXITED = 4
 
 
 class Grid:
@@ -38,7 +39,7 @@ class Grid:
     def __init__(self):
         self.food_positions = []
 
-    def draw(self):
+    def draw(self, screen):
         for x in range(Grid.shape[0]):
             for y in range(Grid.shape[1]):
                 rect = pygame.Rect(
@@ -103,9 +104,9 @@ class Snake:
         )
         return surfaces
 
-    def draw(self):
-        self.draw_head()
-        self.draw_body()
+    def draw(self, screen):
+        self.draw_head(screen)
+        self.draw_body(screen)
 
     def get_body_orientations(self):
         diffs = [
@@ -146,7 +147,7 @@ class Snake:
         # print(orientations)
         return orientations
 
-    def draw_head(self):
+    def draw_head(self, screen):
         head = self.surfaces['head']
         rotation_angle = {
             (0, 1): 0,
@@ -157,7 +158,7 @@ class Snake:
         head = pygame.transform.rotate(head, rotation_angle)
         screen.blit(head, self.grid.to_display_coords(*self.positions[0]))
 
-    def draw_body(self):
+    def draw_body(self, screen):
         if len(self.positions) < 2:
             return
         orientations = self.get_body_orientations()
@@ -208,50 +209,38 @@ class Scoreboard:
     def increment_score(self):
         self.score += 1
 
-    def draw(self):
+    def draw(self, screen):
         text_surface = self.font.render(f'SCORE: {self.score}', True, (160, 0, 0))
         screen.blit(text_surface, self.position)
 
 
-def get_new_movement_direction(pressed_keys):
-    if pressed_keys[pygame.K_UP]:
-        return (0, -1)
-    elif pressed_keys[pygame.K_DOWN]:
-        return (0, 1)
-    elif pressed_keys[pygame.K_LEFT]:
-        return (-1, 0)
-    elif pressed_keys[pygame.K_RIGHT]:
-        return (1, 0)
-    else:
-        return None
+class JararacaGame:
+    def __init__(self):
+        pygame.init()
+        self.game_state = GameState.STARTING
+        pygame.display.set_caption('Jararaca')
+        self.screen = pygame.display.set_mode((DISPLAY_PARAMS.width, DISPLAY_PARAMS.height))
+        self.clock = pygame.time.Clock()
+        self.grid = Grid()
+        self.snake = Snake((self.grid.shape[0] // 2, self.grid.shape[1] // 2), grid=self.grid)
+        self.scoreboard = Scoreboard((self.grid.offset[0], self.grid.offset[1] - 30))
 
+    def get_new_movement_direction(self, pressed_keys):
+        if pressed_keys[pygame.K_UP]:
+            return (0, -1)
+        elif pressed_keys[pygame.K_DOWN]:
+            return (0, 1)
+        elif pressed_keys[pygame.K_LEFT]:
+            return (-1, 0)
+        elif pressed_keys[pygame.K_RIGHT]:
+            return (1, 0)
+        else:
+            return None
 
-def show_starting_instructions():
-    font = pygame.font.Font(pygame.font.get_default_font(), 36)
-    text_surface = font.render(
-        'Press any arrow key to start',
-        True,
-        (160, 0, 0),
-        (0, 0, 0)
-    )
-    text_rect = text_surface.get_rect(
-        center=(
-            DISPLAY_PARAMS.width // 2,
-            DISPLAY_PARAMS.height // 2 - grid.cell_size * 3
-        )
-    )
-    screen.blit(text_surface, text_rect)
-
-
-def show_game_over():
-    font = pygame.font.Font(pygame.font.get_default_font(), 36)
-    lines = [
-        'GAME OVER...',
-        f'FINAL SCORE: {scoreboard.get_score()}',
-    ]
-    for i, line in enumerate(lines):
+    def show_starting_instructions(self):
+        font = pygame.font.Font(pygame.font.get_default_font(), 36)
         text_surface = font.render(
-            line,
+            'Press any arrow key to start',
             True,
             (160, 0, 0),
             (0, 0, 0)
@@ -259,62 +248,78 @@ def show_game_over():
         text_rect = text_surface.get_rect(
             center=(
                 DISPLAY_PARAMS.width // 2,
-                DISPLAY_PARAMS.height // 2 + grid.cell_size * 3 * (i - 1)
+                DISPLAY_PARAMS.height // 2 - self.grid.cell_size * 3
             )
         )
-        screen.blit(text_surface, text_rect)
+        self.screen.blit(text_surface, text_rect)
+
+    def show_game_over(self):
+        font = pygame.font.Font(pygame.font.get_default_font(), 36)
+        lines = [
+            'GAME OVER...',
+            f'FINAL SCORE: {self.scoreboard.get_score()}',
+        ]
+        for i, line in enumerate(lines):
+            text_surface = font.render(
+                line,
+                True,
+                (160, 0, 0),
+                (0, 0, 0)
+            )
+            text_rect = text_surface.get_rect(
+                center=(
+                    DISPLAY_PARAMS.width // 2,
+                    DISPLAY_PARAMS.height // 2 + self.grid.cell_size * 3 * (i - 1)
+                )
+            )
+            self.screen.blit(text_surface, text_rect)
+
+    def draw_main_elements(self):
+        self.screen.fill(DISPLAY_PARAMS.bg_color)
+        self.grid.draw(self.screen)
+        self.snake.draw(self.screen)
+        self.scoreboard.draw(self.screen)
+
+    def game_loop(self):
+        new_direction = None
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (
+                    event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_q]):
+                pygame.quit()
+                self.game_state = GameState.EXITED
+                return
+            if event.type == pygame.KEYDOWN:
+                new_direction = self.get_new_movement_direction(pygame.key.get_pressed())
+            if new_direction is not None:
+                self.snake.movement_direction = new_direction
+
+        if self.game_state == GameState.STARTING:
+            self.draw_main_elements()
+            self.show_starting_instructions()
+            if new_direction is not None:
+                self.game_state = GameState.RUNNING
+        elif self.game_state == GameState.RUNNING:
+            grew = self.snake.maybe_grow()
+            if grew:
+                self.scoreboard.increment_score()
+            self.snake.update_position()
+            is_collided = self.snake.is_collided()
+            if is_collided:
+                print(f'DEAD! Final score: {self.scoreboard.get_score()}')
+                self.game_state = GameState.GAME_OVER
+            self.draw_main_elements()
+            self.grid.maybe_spawn_food(self.snake.positions)
+        if self.game_state == GameState.GAME_OVER:
+            self.show_game_over()
+        pygame.display.set_caption(f'Jararaca (FPS: {self.clock.get_fps():.2f})')
+        pygame.display.update()
+        self.clock.tick(DISPLAY_PARAMS.max_fps)
+
+    def run(self):
+        while not self.game_state == GameState.EXITED:
+            self.game_loop()
 
 
-def game_loop(game_state):
-    new_direction = None
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or (
-                event.type == pygame.KEYDOWN and pygame.key.get_pressed()[pygame.K_q]):
-            pygame.quit()
-            exit()
-        if event.type == pygame.KEYDOWN:
-            new_direction = get_new_movement_direction(pygame.key.get_pressed())
-        if new_direction is not None:
-            snake.movement_direction = new_direction
-
-    if game_state == GameState.STARTING:
-        screen.fill(DISPLAY_PARAMS.bg_color)
-        grid.draw()
-        snake.draw()
-        scoreboard.draw()
-        show_starting_instructions()
-        if new_direction is not None:
-            game_state = GameState.RUNNING
-    elif game_state == GameState.RUNNING:
-        grew = snake.maybe_grow()
-        if grew:
-            scoreboard.increment_score()
-        snake.update_position()
-        is_collided = snake.is_collided()
-        if is_collided:
-            print(f'DEAD! Final score: {scoreboard.get_score()}')
-            game_state = GameState.FINISHED
-        screen.fill(DISPLAY_PARAMS.bg_color)
-        grid.draw()
-        snake.draw()
-        scoreboard.draw()
-        grid.maybe_spawn_food(snake.positions)
-    if game_state == GameState.FINISHED:
-        show_game_over()
-    pygame.display.set_caption(f'Jararaca (FPS: {clock.get_fps():.2f})')
-    pygame.display.update()
-    clock.tick(DISPLAY_PARAMS.max_fps)
-    return game_state
-
-
-pygame.init()
-screen = pygame.display.set_mode((DISPLAY_PARAMS.width, DISPLAY_PARAMS.height))
-pygame.display.set_caption('Jararaca')
-clock = pygame.time.Clock()
-grid = Grid()
-snake = Snake((grid.shape[0] // 2, grid.shape[1] // 2), grid=grid)
-scoreboard = Scoreboard((grid.offset[0], grid.offset[1] - 30))
-
-game_state = GameState.STARTING
-while True:
-    game_state = game_loop(game_state)
+if __name__ == '__main__':
+    game = JararacaGame()
+    game.run()
