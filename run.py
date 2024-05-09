@@ -185,14 +185,12 @@ class Snake:
         screen.blit(tail, self.grid.to_display_coords(*tail_pos))
 
     def update_position(self):
-        self.positions.pop(-1)
-        self.positions.insert(
-            0,
-            (
-                self.positions[0][0] + self.movement_direction[0],
-                self.positions[0][1] + self.movement_direction[1]
-            )
+        new_head_position = (
+            self.positions[0][0] + self.movement_direction[0],
+            self.positions[0][1] + self.movement_direction[1]
         )
+        self.positions.pop(-1)
+        self.positions.insert(0, new_head_position)
 
     def maybe_grow(self):
         next_pos = (self.positions[0][0] + self.movement_direction[0],
@@ -203,6 +201,17 @@ class Snake:
             grew = True
             self.grid.food_positions.remove(next_pos)
         return grew
+
+    def validate_new_direction(self, new_direction):
+        new_head_position = (
+            self.positions[0][0] + new_direction[0],
+            self.positions[0][1] + new_direction[1]
+        )
+        # if trying to go backwards, do nothing
+        if new_head_position == self.positions[1]:
+            return False
+        else:
+            return True
 
     def is_collided(self):
         for pos in self.positions:
@@ -309,7 +318,7 @@ class JararacaGame:
                 return
             if event.type == pygame.KEYDOWN:
                 new_direction = self.get_new_movement_direction(pygame.key.get_pressed())
-            if new_direction is not None:
+            if new_direction is not None and self.snake.validate_new_direction(new_direction):
                 self.snake.movement_direction = new_direction
 
         if self.game_state == GameState.STARTING:
