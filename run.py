@@ -1,5 +1,6 @@
 from enum import Enum
 import random
+from pathlib import Path
 
 import pygame
 
@@ -7,8 +8,8 @@ import pygame
 # pygame orders coodinates as (x, y), (width, height)
 
 class DISPLAY_PARAMS:
-    width = 1280
-    height = 720
+    width = 1600
+    height = 900
     max_fps = 15
     bg_color = (0, 0, 0)
 
@@ -21,9 +22,9 @@ class GameState(Enum):
 
 
 class Grid:
-    shape = (30, 20)
-    cell_size = 30  # pixels
-    border_size = 0  # pixels
+    shape = (18, 12)
+    cell_size = 64   # pixels
+    border_size = 0 
     cell_colors = [(0, 127, 30), (0, 65, 0)]
 
     total_pixel_size = (
@@ -86,9 +87,10 @@ class Snake:
         self.movement_direction = (0, 1)
 
     def init_surfaces(self):
-        head = pygame.image.load('graphics/head.png').convert_alpha()
-        body_V = pygame.image.load('graphics/body_V.png').convert_alpha()
-        body_SW = pygame.image.load('graphics/body_SW.png').convert_alpha()
+        snake_version = 'snake_default'
+        head = pygame.image.load(Path('graphics') / snake_version / 'head.png').convert_alpha()
+        body_V = pygame.image.load(Path('graphics') / snake_version / 'body_V.png').convert_alpha()
+        body_SW = pygame.image.load(Path('graphics') / snake_version / 'body_SW.png').convert_alpha()
         surfaces = dict(
             head=head,
             body_V=body_V,
