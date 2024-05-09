@@ -24,7 +24,7 @@ class GameState(Enum):
 class Grid:
     shape = (18, 12)
     cell_size = 64   # pixels
-    border_size = 0 
+    border_size = 0
     cell_colors = [(0, 127, 30), (0, 65, 0)]
 
     total_pixel_size = (
@@ -80,7 +80,8 @@ class Snake:
             initial_position,
             (initial_position[0], initial_position[1] - 1),
             (initial_position[0], initial_position[1] - 2),
-            (initial_position[0] - 1, initial_position[1] - 2)
+            (initial_position[0] - 1, initial_position[1] - 2),
+            (initial_position[0] - 2, initial_position[1] - 2)
         ]
         self.grid = grid
         self.surfaces = self.init_surfaces()
@@ -91,6 +92,7 @@ class Snake:
         head = pygame.image.load(Path('graphics') / snake_version / 'head.png').convert_alpha()
         body_V = pygame.image.load(Path('graphics') / snake_version / 'body_V.png').convert_alpha()
         body_SW = pygame.image.load(Path('graphics') / snake_version / 'body_SW.png').convert_alpha()
+        tail = pygame.image.load(Path('graphics') / snake_version / 'tail.png').convert_alpha()
         surfaces = dict(
             head=head,
             body_V=body_V,
@@ -99,6 +101,7 @@ class Snake:
             body_SE=pygame.transform.rotate(body_SW, 90),
             body_NE=pygame.transform.rotate(body_SW, 180),
             body_NW=pygame.transform.rotate(body_SW, 270),
+            tail=tail
         )
         surfaces = dict(
             (k, pygame.transform.scale(surface, (self.grid.cell_size, self.grid.cell_size)))
@@ -109,6 +112,7 @@ class Snake:
     def draw(self, screen):
         self.draw_head(screen)
         self.draw_body(screen)
+        self.draw_tail(screen)
 
     def get_body_orientations(self):
         diffs = [
@@ -145,8 +149,6 @@ class Snake:
                 else:
                     orientation = 'V'
             orientations.append(orientation)
-        # print(diffs)
-        # print(orientations)
         return orientations
 
     def draw_head(self, screen):
@@ -164,8 +166,23 @@ class Snake:
         if len(self.positions) < 2:
             return
         orientations = self.get_body_orientations()
-        for pos, orientation in zip(self.positions[1:], orientations):
+        for pos, orientation in zip(self.positions[1:-1], orientations[:-1]):
             screen.blit(self.surfaces[f'body_{orientation}'], self.grid.to_display_coords(*pos))
+
+    def draw_tail(self, screen):
+        tail_pos = self.positions[-1]
+        _diff = (
+            tail_pos[0] - self.positions[-2][0],
+            tail_pos[1] - self.positions[-2][1]
+        )
+        rotation_angle = {
+            (0, -1): 0,
+            (-1, 0): 90,
+            (0, 1): 180,
+            (1, 0): 270,
+        }.get(_diff)
+        tail = pygame.transform.rotate(self.surfaces['tail'], rotation_angle)
+        screen.blit(tail, self.grid.to_display_coords(*tail_pos))
 
     def update_position(self):
         self.positions.pop(-1)
