@@ -70,7 +70,12 @@ class FoodManager:
         offsets = [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]
         if any(self.has_food((position[0] + offset[0], position[1] + offset[1])) for offset in offsets):
             return False
-        grid_corners = [(0, 0), (0, self.grid.shape[1]), (self.grid.shape[0], 0), self.grid.shape]
+        grid_corners = [
+            (0, 0),
+            (0, self.grid.shape[1] - 1),
+            (self.grid.shape[0] - 1, 0),
+            (self.grid.shape[0] - 1, self.grid.shape[1] - 1)
+        ]
         if any(position == query_position for query_position in grid_corners):
             return False
         return True
