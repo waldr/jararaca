@@ -37,9 +37,6 @@ class Grid:
         (DISPLAY_PARAMS.height - total_pixel_size[1]) // 2
     )
 
-    def __init__(self):
-        self.food_positions = []
-
     def draw(self, screen):
         for x in range(Grid.shape[0]):
             for y in range(Grid.shape[1]):
@@ -49,14 +46,6 @@ class Grid:
                 )
                 pygame.draw.rect(screen, Grid.cell_colors[(x + y) % 2], rect)
 
-        for food_pos in self.food_positions:
-            pygame.draw.circle(
-                screen,
-                (160, 0, 0),  # random.choice([(160, 0, 0), (160, 160, 0)]),
-                self.to_display_coords(food_pos[0], food_pos[1], centralized=True),
-                7
-            )
-
     def to_display_coords(self, x, y, centralized: bool = False):
         cell_ref_point = (Grid.cell_size // 2, Grid.cell_size // 2) if centralized else (0, 0)
         return (
@@ -64,14 +53,56 @@ class Grid:
             Grid.offset[1] + y * Grid.cell_size + (y + 1) * (Grid.border_size) + cell_ref_point[1]
         )
 
+
+class FoodManager:
+    def __init__(self, grid: Grid):
+        self.foods = dict()
+        self.grid = grid
+
+    def draw(self, screen):
+        for food in self.foods.values():
+            food.draw(screen)
+
+    def has_food(self, position):
+        return position in self.foods
+
+    def _is_valid_spawn_position(self, position):
+        offsets = [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]
+        if any(self.has_food((position[0] + offset[0], position[1] + offset[1])) for offset in offsets):
+            return False
+        grid_corners = [(0, 0), (0, self.grid.shape[1]), (self.grid.shape[0], 0), self.grid.shape]
+        if any(position == query_position for query_position in grid_corners):
+            return False
+        return True
+
     def maybe_spawn_food(self, occupied_positions):
-        if len(self.food_positions) < 5 and random.random() > 0.95:
-            pos = (
-                random.randint(0, self.shape[0] - 1),
-                random.randint(0, self.shape[1] - 1)
+        if len(self.foods) < 5 and random.random() > 0.95:
+            position = (
+                random.randint(0, self.grid.shape[0] - 1),
+                random.randint(0, self.grid.shape[1] - 1)
             )
-            if pos not in occupied_positions and pos not in self.food_positions:
-                self.food_positions.append(pos)
+            if position not in occupied_positions and self._is_valid_spawn_position(position):
+                self.foods[position] = Food(position, self.grid)
+
+    def consume_food(self, position):
+        if self.has_food(position):
+            del self.foods[position]
+
+
+class Food:
+    def __init__(self, position, grid: Grid):
+        self.position = position
+        self.grid = grid
+        self.food_type = random.choice(['red_fruit', 'rodent'])
+        self.sprite = self.initialize_sprite()
+
+    def initialize_sprite(self):
+        base_sprite = pygame.image.load(Path('graphics') / 'food' / f'{self.food_type}.png').convert_alpha()
+        sprite = pygame.transform.scale(base_sprite, (self.grid.cell_size, self.grid.cell_size))
+        return sprite
+
+    def draw(self, screen):
+        screen.blit(self.sprite, self.grid.to_display_coords(*self.position))
 
 
 class Snake:
@@ -192,14 +223,14 @@ class Snake:
         self.positions.pop(-1)
         self.positions.insert(0, new_head_position)
 
-    def maybe_grow(self):
+    def maybe_grow(self, food_manager: FoodManager):
         next_pos = (self.positions[0][0] + self.movement_direction[0],
                     self.positions[0][1] + self.movement_direction[1])
         grew = False
-        if next_pos in self.grid.food_positions:
+        if food_manager.has_food(next_pos):
             self.positions.insert(0, next_pos)
             grew = True
-            self.grid.food_positions.remove(next_pos)
+            food_manager.consume_food(next_pos)
         return grew
 
     def validate_new_direction(self, new_direction):
@@ -252,6 +283,7 @@ class JararacaGame:
         self.grid = Grid()
         self.snake = Snake((self.grid.shape[0] // 2, self.grid.shape[1] // 2), grid=self.grid)
         self.scoreboard = Scoreboard((self.grid.offset[0], self.grid.offset[1] - 30))
+        self.food_manager = FoodManager(self.grid)
 
     def get_new_movement_direction(self, pressed_keys):
         if pressed_keys[pygame.K_UP]:
@@ -306,6 +338,7 @@ class JararacaGame:
         self.screen.fill(DISPLAY_PARAMS.bg_color)
         self.grid.draw(self.screen)
         self.snake.draw(self.screen)
+        self.food_manager.draw(self.screen)
         self.scoreboard.draw(self.screen)
 
     def game_loop(self):
@@ -327,7 +360,7 @@ class JararacaGame:
             if new_direction is not None:
                 self.game_state = GameState.RUNNING
         elif self.game_state == GameState.RUNNING:
-            grew = self.snake.maybe_grow()
+            grew = self.snake.maybe_grow(self.food_manager)
             if grew:
                 self.scoreboard.increment_score()
             self.snake.update_position()
@@ -336,7 +369,7 @@ class JararacaGame:
                 print(f'DEAD! Final score: {self.scoreboard.get_score()}')
                 self.game_state = GameState.GAME_OVER
             self.draw_main_elements()
-            self.grid.maybe_spawn_food(self.snake.positions)
+            self.food_manager.maybe_spawn_food(self.snake.positions)
         if self.game_state == GameState.GAME_OVER:
             self.show_game_over()
         pygame.display.set_caption(f'Jararaca (FPS: {self.clock.get_fps():.2f})')
