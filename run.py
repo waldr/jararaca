@@ -5,7 +5,7 @@ from pathlib import Path
 import pygame
 
 
-# pygame orders coodinates as (x, y), (width, height)
+# pygame orders coordinates as (x, y), (width, height)
 
 class DISPLAY_PARAMS:
     width = 1600
@@ -124,7 +124,7 @@ class Snake:
         self.movement_direction = (0, 1)
 
     def init_surfaces(self):
-        snake_version = 'snake_default'
+        snake_version = 'snake_pixelart_simple'
         head = pygame.image.load(Path('graphics') / snake_version / 'head.png').convert_alpha()
         body_V = pygame.image.load(Path('graphics') / snake_version / 'body_V.png').convert_alpha()
         body_SW = pygame.image.load(Path('graphics') / snake_version / 'body_SW.png').convert_alpha()
