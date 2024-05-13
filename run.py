@@ -124,7 +124,7 @@ class Snake:
         self.movement_direction = (0, 1)
 
     def init_surfaces(self):
-        snake_version = 'snake_pixelart_simple'
+        snake_version = 'snake_pixelart'
         head = pygame.image.load(Path('graphics') / snake_version / 'head.png').convert_alpha()
         body_V = pygame.image.load(Path('graphics') / snake_version / 'body_V.png').convert_alpha()
         body_SW = pygame.image.load(Path('graphics') / snake_version / 'body_SW.png').convert_alpha()
